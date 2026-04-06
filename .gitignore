@@ -1,0 +1,42 @@
+# Virtual environment
+venv/
+env/
+ENV/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Data files (temporary - will be replaced)
+data/
+*.npy
+*.json
+
+# Outputs (generated files)
+outputs/
+*.csv
+*.html
+*.png
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Environment
+.env
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Test coverage
+.coverage
+htmlcov/
