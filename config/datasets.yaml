@@ -1,0 +1,22 @@
+# Dataset Configuration
+
+reference:
+  name: "MesoInception-4 Training Data"
+  features_path: "data/reference/train_features.npy"
+  labels_path: "data/reference/train_labels.npy"
+  num_samples: 1800
+  num_features: 16
+  description: "Baseline from Meta-Learning Classifier training"
+
+simulation_batches:
+  - batch_id: "baseline_healthy"
+    features_path: "data/simulation/baseline_features.npy"
+    num_samples: 1000
+    expected_drift: "none"
+    description: "Healthy traffic - no drift"
+  
+  - batch_id: "live_drifted"
+    features_path: "data/simulation/drifted_features.npy"
+    num_samples: 500
+    expected_drift: "high"
+    description: "New deepfake type - high drift"

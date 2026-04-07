@@ -1,0 +1,12 @@
+# Drift Detection Thresholds
+
+psi:
+  moderate: 0.25
+  high: 0.35
+
+ks_test:
+  significance_level: 0.05
+
+monitoring:
+  batch_size: 1000
+  min_batch_size: 100

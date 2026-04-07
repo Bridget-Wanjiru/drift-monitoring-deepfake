@@ -1,6 +1,6 @@
 # Drift Monitoring Microservice
 
-**Component 5 of the Deepfake Detection System
+Component 5 of the Deepfake Detection System
 
 ## Purpose
 Monitors distributional drift in Meta-Learning Classifier outputs to detect when the model encounters novel deepfake types.
