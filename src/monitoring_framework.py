@@ -285,35 +285,34 @@ class MonitoringFramework:
 # Testing code
 if __name__ == '__main__':
     print("Monitoring Framework - Test Run")
-        
+    
+    
     # Initialize framework
     framework = MonitoringFramework(
         reference_path='data/reference/train_features.npy',
         batch_size=100  # Smaller for testing
     )
     
-    # Test 1: Process healthy traffic batch
+    # TEST 1: Process healthy traffic batch
     print("\nTEST 1: Healthy Traffic")
     
+    # UPDATED PATH BELOW:
     results1 = framework.process_batch_file(
-        'data/simulation/baseline_features.npy',
+        'data/simulation/week1_features.npy', 
         batch_name='healthy_week1'
     )
     
     status1 = framework.get_reliability_status()
     print(f"\nFrontend Badge: {status1['badge_text']}")
     
-    # Test 2: Process drifted traffic batch
+    # TEST 2: Process drifted traffic batch
     print("\nTEST 2: Drifted Traffic")
     
+    # UPDATED PATH BELOW:
     results2 = framework.process_batch_file(
-        'data/simulation/drifted_features.npy',
+        'data/simulation/week3_features.npy', 
         batch_name='drifted_week3'
     )
     
     status2 = framework.get_reliability_status()
     print(f"\nFrontend Badge: {status2['badge_text']}")
-    if status2['show_user_message']:
-        print(f"User Message: {status2['user_message']}")
-    
-        print(f" Test Complete - Check {framework.history_file}")
