@@ -139,7 +139,7 @@ def generate_dashboard_html():
             </style>
         </head>
         <body>
-            <h1>⏳ No Evaluation Stream Data Detected</h1>
+            <h1> No Evaluation Stream Data Detected</h1>
             <p>Execute live system testing arrays to populate metrics tables.</p>
         </body>
         </html>

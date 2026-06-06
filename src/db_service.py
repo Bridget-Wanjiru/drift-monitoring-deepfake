@@ -92,6 +92,44 @@ class DatabaseService:
             print(f" Failed to save analysis array output vectors: {e}")
             return False
 
+    def fetch_latest_meta_features(self, batch_size=1000):
+        """
+        Pulls the latest 16D meta-features from the ml_analysis_results table
+        using your read-only drift monitor credentials.
+        """
+        import numpy as np
+        
+        # SQL query to grab the 16D arrays and their processing timestamps
+        query = """
+            SELECT video_id, meta_features 
+            FROM ml_analysis_results 
+            ORDER BY result_id DESC 
+            LIMIT %s;
+        """
+        
+        try:
+            with self.connection.cursor() as cursor:
+                cursor.execute(query, (batch_size,))
+                rows = cursor.fetchall()
+                
+            if not rows:
+                print(" Database scan complete: No live feature records found yet.")
+                return None
+                
+            # Extract the 16D arrays from the database rows
+            # Assumes meta_features is stored as a PostgreSQL array (FLOAT[])
+            features_list = [row[1] for row in rows]
+            
+            # Convert the list of arrays into a clean 2D NumPy array (Shape: N x 16)
+            features_matrix = np.array(features_list)
+            
+            print(f"  Successfully pulled {features_matrix.shape[0]} samples from Neon cloud.")
+            return features_matrix
+            
+        except Exception as e:
+            print(f"  Failed to fetch meta-features from cloud table: {e}")
+            return None
+    
     def save_drift_metric(self, batch_sample_size: int, psi_score: float, 
                           ks_statistic: float, system_health: str) -> bool:
         """Logs processed analytical statistical metrics computed from population metrics models."""
