@@ -256,28 +256,31 @@ async def health_check():
 async def drift_dashboard():
     """
     Admin dashboard with PSI trends, drift history, and recommendations
-    (Full implementation in next step)
     """
-    # Placeholder - will implement full dashboard in Step 12
-    html_content = """
+    # We use double curly braces {{ }} for CSS so Python f-strings ignore them
+    reliability = monitoring.current_reliability
+    psi_value = f"{monitoring.current_psi:.4f}" if monitoring.current_psi else "N/A"
+    batches = monitoring.batch_count
+
+    html_content = f"""
     <!DOCTYPE html>
     <html>
     <head>
         <title>Drift Dashboard</title>
         <style>
-            body { 
+            body {{ 
                 font-family: Arial, sans-serif; 
                 max-width: 1200px; 
                 margin: 20px auto; 
                 padding: 20px;
-            }
-            h1 { color: #2c3e50; }
-            .status-box {
+            }}
+            h1 {{ color: #2c3e50; }}
+            .status-box {{
                 background: #ecf0f1;
                 padding: 20px;
                 border-radius: 10px;
                 margin: 20px 0;
-            }
+            }}
         </style>
     </head>
     <body>
@@ -285,17 +288,13 @@ async def drift_dashboard():
         <div class="status-box">
             <h2>Current Status</h2>
             <p><strong>Reliability:</strong> {reliability}</p>
-            <p><strong>PSI:</strong> {psi}</p>
+            <p><strong>PSI:</strong> {psi_value}</p>
             <p><strong>Batches Analyzed:</strong> {batches}</p>
         </div>
         <p><em>Full dashboard with charts coming in next step...</em></p>
     </body>
     </html>
-    """.format(
-        reliability=monitoring.current_reliability,
-        psi=f"{monitoring.current_psi:.4f}" if monitoring.current_psi else "N/A",
-        batches=monitoring.batch_count
-    )
+    """
     return HTMLResponse(content=html_content)
 
 
