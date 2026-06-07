@@ -123,8 +123,8 @@ def generate_recommendations(latest_reliability, latest_psi):
         """
 
 
-def generate_dashboard_html():
-    """Generate complete dark-slate theme matching dashboard HTML"""
+def generate_dashboard_html(latest_reliability=None, latest_psi=None):
+    """Generate complete dark-slate theme matching dashboard HTML (Accepts arguments safely)"""
     df = load_drift_history()
     
     if df.empty:
@@ -146,8 +146,9 @@ def generate_dashboard_html():
         """
     
     latest = df.iloc[-1]
-    latest_reliability = latest['reliability']
-    latest_psi = latest['psi']
+    # Use computed properties if none were passed directly
+    latest_reliability = latest_reliability or latest['reliability']
+    latest_psi = latest_psi or latest['psi']
     total_batches = len(df)
     
     psi_chart = create_psi_trend_chart(df)
@@ -237,9 +238,6 @@ def generate_dashboard_html():
                 margin-bottom: 35px;
             }}
 
-            /* ============================================================
-               TELEMETRY GRID CARDS
-               ============================================================ */
             .status-grid {{
                 display: grid;
                 grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -281,9 +279,6 @@ def generate_dashboard_html():
             .status-card .value-MODERATE {{ color: var(--accent-warning); }}
             .status-card .value-CAUTION {{ color: var(--accent-danger); text-shadow: 0 0 10px rgba(239,68,68,0.2); }}
 
-            /* ============================================================
-               DASHBOARD LOGIC CONTAINERS
-               ============================================================ */
             .section {{
                 margin: 45px 0;
             }}
@@ -332,9 +327,6 @@ def generate_dashboard_html():
             .alert-box ul {{ padding-left: 20px; margin: 15px 0; }}
             .alert-box li {{ margin-bottom: 8px; color: var(--text-secondary); }}
 
-            /* ============================================================
-               RESPONSIVE DATA MATRIX TABLE
-               ============================================================ */
             .table-responsive {{
                 width: 100%;
                 overflow-x: auto;
@@ -443,22 +435,25 @@ def generate_dashboard_html():
                 <p>System Telemetry Engine Port 8000 • Re-Calculated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
             </div>
         </div>
+
+        <script src="../js/dashboard.js"></script>
     </body>
     </html>
     """
     return html_template
 
 
-def save_dashboard(output_path='outputs/dashboards/dashboard.html'):
-    """Generate and save dashboard HTML"""
+def save_dashboard(output_path='public/dashboard/index.html'):
+    """Generate and save dashboard HTML directly to the Firebase public route"""
     html = generate_dashboard_html()
-    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    target = Path(output_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
     
-    with open(output_path, 'w', encoding='utf-8') as f:
-        f.write(html)
+    with open(target, "w", encoding="utf-8") as f:
+         f.write(html)
         
-    print(f" THEME MATCHED: {Path(output_path).resolve()}")
-    return output_path
+    print(f" UNIFIED TELEMETRY DEPLOYED: {target.resolve()}")
+    return str(output_path)
 
 
 if __name__ == '__main__':
