@@ -274,7 +274,7 @@ function updateRecommendation() {
             'The temporal analysis revealed inconsistencies in lip sync, eye movement, and facial geometry that are ' +
             'consistent with AI-generated content. Manual verification by a media forensics expert is strongly recommended.';
     } else {
-        recommendationText.textContent = '✓ APPEARS AUTHENTIC - This video passed temporal consistency checks. ' +
+        recommendationText.textContent = 'APPEARS AUTHENTIC - This video passed temporal consistency checks. ' +
             'However, this assessment should be considered alongside other verification methods. ' +
             'We recommend cross-referencing with additional forensic analysis when critical decisions depend on authenticity.';
     }

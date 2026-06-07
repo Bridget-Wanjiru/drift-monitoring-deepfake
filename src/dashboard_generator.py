@@ -396,7 +396,7 @@ def generate_dashboard_html():
     </head>
     <body>
         <div class="container">
-            <h1>🔍 Drift Monitoring Dashboard</h1>
+            <h1> Drift Monitoring Dashboard</h1>
             <p class="subtitle">Microservice Telemetry Console • Real-time Population Stability Monitoring</p>
             
             <div class="status-grid">
