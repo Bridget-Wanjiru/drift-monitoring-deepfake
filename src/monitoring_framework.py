@@ -132,7 +132,11 @@ class MonitoringFramework:
             
         # 3. Compile your new dark neon styled dashboard template automatically
         try:
-            save_dashboard()
+            # FIXED: Passing live memory arguments directly to prevent data racing conditions
+            save_dashboard(
+                latest_reliability=results['reliability'], 
+                latest_psi=results['psi']
+            )
         except Exception as e:
             print(f"  Dashboard generation error: {e}")
         
@@ -238,7 +242,7 @@ class MonitoringFramework:
         # Save validation updates to Cloud storage database layer natively
         try:
             db_service = DatabaseService()
-           # Map internal reliability values safely to Neon's SQL check constraint
+            # Map internal reliability values safely to Neon's SQL check constraint
             db_health_map = {"HIGH": "HEALTHY", "MODERATE": "CAUTION", "CAUTION": "CRITICAL"}
             db_health_status = db_health_map.get(str(results['reliability']).upper(), "HEALTHY")
 
@@ -255,7 +259,11 @@ class MonitoringFramework:
 
         # Regenerate your dark UI template presentation view
         try:
-            save_dashboard()
+            # FIXED: Passing live memory tokens directly to prevent data racing sync drops
+            save_dashboard(
+                latest_reliability=results['reliability'], 
+                latest_psi=results['psi']
+            )
         except Exception as e:
             print(f"  UI presentation file save crash error: {e}")
         

@@ -443,9 +443,11 @@ def generate_dashboard_html(latest_reliability=None, latest_psi=None):
     return html_template
 
 
-def save_dashboard(output_path='public/dashboard/index.html'):
+# Update this function inside src/dashboard_generator.py:
+def save_dashboard(latest_reliability=None, latest_psi=None, output_path='public/dashboard/index.html'):
     """Generate and save dashboard HTML directly to the Firebase public route"""
-    html = generate_dashboard_html()
+    # Forward the live memory arguments straight to the html compiler!
+    html = generate_dashboard_html(latest_reliability, latest_psi)
     target = Path(output_path)
     target.parent.mkdir(parents=True, exist_ok=True)
     
