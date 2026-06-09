@@ -8,7 +8,7 @@
 // CONFIGURATION 
 // ============================================================
 // Paste your Orchestrator teammate's live URL here
-const ORCHESTRATOR_URL = 'https://comp-edited-faced-spatial.trycloudflare.com/run-pipeline';
+const ORCHESTRATOR_URL = 'https://rochester-hardly-specific-removing.trycloudflare.com/run-pipeline';
 
 // ============================================================
 // DOM Elements

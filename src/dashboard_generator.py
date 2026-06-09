@@ -1,39 +1,64 @@
 """
-Dashboard Generator - Production Dark Neon Style
-Creates HTML dashboard with matching website typography, neon aesthetics, and responsiveness.
+Dashboard Generator - Live Neon Database Integration Edition
+Connects directly to your PostgreSQL drift_metrics table to generate real-time HTML telemetry.
 """
 
 import pandas as pd
 import plotly.graph_objects as go
 from pathlib import Path
 from datetime import datetime
+from sqlalchemy import create_engine
 
 
-def load_drift_history(csv_path='outputs/results/drift_history.csv'):
-    """Load drift history from CSV"""
-    if not Path(csv_path).exists():
+def load_drift_history_from_neon():
+    """Connects directly to Neon and reads live drift metrics safely"""
+    try:
+        # DB Connection String - Change this to your actual Neon Connection String!
+        NEON_DB_URL = "postgresql://admin:password@your-neon-host.neon.tech/main_db?sslmode=require"
+        engine = create_engine(NEON_DB_URL)
+        
+        # Pull your true database columns chronologically
+        query = """
+            SELECT 
+                id AS batch_id, 
+                calculated_at AS timestamp, 
+                psi_score AS psi, 
+                ks_statistic, 
+                ks_pvalue, 
+                CASE 
+                    WHEN system_health = 'HEALTHY' THEN 'none'
+                    WHEN system_health = 'CAUTION' THEN 'moderate'
+                    ELSE 'high'
+                END AS drift_status,
+                system_health AS reliability
+            FROM drift_metrics 
+            ORDER BY calculated_at ASC
+        """
+        df = pd.read_sql(query, con=engine)
+        
+        # Ensure timestamp column formats natively as datetime properties
+        df['timestamp'] = pd.to_datetime(df['timestamp'])
+        return df
+    except Exception as e:
+        print(f" DATABASE CONNECTION ERROR: {e}")
+        # Fallback to an empty dataframe if connection fails so the script doesn't crash
         return pd.DataFrame()
-    
-    df = pd.read_csv(csv_path)
-    df['timestamp'] = pd.to_datetime(df['timestamp'])
-    return df
 
 
 def create_psi_trend_chart(df):
     """Create a dual-axis dark-themed matching Plotly chart showing both PSI and KS statistics"""
     from plotly.subplots import make_subplots
     
-    # Create a layout with two independent Y-axes
     fig = make_subplots(specs=[[{"secondary_y": True}]])
     
-    # 1. Add PSI trend line (Primary Y-Axis)
+    # 1. Add PSI trend line (Primary Y-Axis) - Now using live df['batch_id'] (1, 2, 3...)
     fig.add_trace(go.Scatter(
         x=df['batch_id'],
         y=df['psi'],
         mode='lines+markers',
         name='PSI Metric',
-        line=dict(color='#3b82f6', width=3), # Deep Blue
-        marker=dict(size=8, color='#00ff00') # Glowing Neon Green
+        line=dict(color='#3b82f6', width=3),
+        marker=dict(size=8, color='#00ff00')
     ), secondary_y=False)
     
     # 2. Add KS Statistic trend line (Secondary Y-Axis)
@@ -42,11 +67,10 @@ def create_psi_trend_chart(df):
         y=df['ks_statistic'],
         mode='lines+markers',
         name='KS Statistic',
-        line=dict(color='#a855f7', width=2, dash='dot'), # Electric Purple
+        line=dict(color='#a855f7', width=2, dash='dot'),
         marker=dict(size=6, color='#dfa5f9')
     ), secondary_y=True)
     
-    # Add horizontal threshold bars for PSI safety limits
     fig.add_hline(y=0.25, line_dash="dash", line_color="#f59e0b", line_width=1.5)
     fig.add_hline(y=0.35, line_dash="dash", line_color="#ef4444", line_width=1.5)
     
@@ -69,7 +93,6 @@ def create_psi_trend_chart(df):
         ]
     )
     
-    # Define labels for both vertical axes separate scales
     fig.update_yaxes(title_text="PSI Magnitude Scale", secondary_y=False, gridcolor="#1e293b", zerolinecolor="#334155")
     fig.update_yaxes(title_text="KS Statistic Scale (0 to 1)", secondary_y=True, showgrid=False)
     
@@ -78,7 +101,7 @@ def create_psi_trend_chart(df):
 
 def generate_recommendations(latest_reliability, latest_psi):
     """Generate dark UI matching recommendation alert panels"""
-    if latest_reliability == "HIGH":
+    if latest_reliability == "HEALTHY":
         return """
         <div class="alert-box success-panel">
             <h3> The system is operating as required</h3>
@@ -90,8 +113,7 @@ def generate_recommendations(latest_reliability, latest_psi):
             </ul>
         </div>
         """
-    
-    elif latest_reliability == "MODERATE":
+    elif latest_reliability == "CAUTION":
         return f"""
         <div class="alert-box warning-panel">
             <h3>Monitor trends</h3>
@@ -105,8 +127,7 @@ def generate_recommendations(latest_reliability, latest_psi):
             <p style="margin-top: 15px; font-size: 0.9rem; opacity: 0.9;"><strong>Suggested Lifecycle Model Refresh:</strong> Within 14-21 Days</p>
         </div>
         """
-    
-    else:  # CAUTION / LOW / CRITICAL
+    else:  # CRITICAL
         return f"""
         <div class="alert-box critical-panel">
             <h3> Immediate Action Required</h3>
@@ -124,8 +145,9 @@ def generate_recommendations(latest_reliability, latest_psi):
 
 
 def generate_dashboard_html(latest_reliability=None, latest_psi=None):
-    """Generate complete dark-slate theme matching dashboard HTML (Accepts arguments safely)"""
-    df = load_drift_history()
+    """Generate complete dark-slate theme matching dashboard HTML"""
+    # 💥 CRUCIAL UPDATE: Now loading live database records from Neon!
+    df = load_drift_history_from_neon()
     
     if df.empty:
         return """
@@ -140,13 +162,12 @@ def generate_dashboard_html(latest_reliability=None, latest_psi=None):
         </head>
         <body>
             <h1> No Evaluation Stream Data Detected</h1>
-            <p>Execute live system testing arrays to populate metrics tables.</p>
+            <p>Check your Neon drift_metrics table connection string setup.</p>
         </body>
         </html>
         """
     
     latest = df.iloc[-1]
-    # Use computed properties if none were passed directly
     latest_reliability = latest_reliability or latest['reliability']
     latest_psi = latest_psi or latest['psi']
     total_batches = len(df)
@@ -154,22 +175,22 @@ def generate_dashboard_html(latest_reliability=None, latest_psi=None):
     psi_chart = create_psi_trend_chart(df)
     recommendations = generate_recommendations(latest_reliability, latest_psi)
     
-    # Process the HTML table columns including your KS variables cleanly
+    # Process the HTML table columns cleanly
     table_html = df[['batch_id', 'timestamp', 'psi', 'ks_statistic', 'ks_pvalue', 'drift_status', 'reliability']].to_html(
         index=False,
         classes='table',
         border=0
     )
     
-    # Add custom responsive styling replacements to row cells dynamically
+    # Dynamic String Replacements for CSS Color badges
     table_html = table_html.replace('<td>none</td>', '<td style="color: var(--accent-success);">none</td>')
     table_html = table_html.replace('<td>moderate</td>', '<td style="color: var(--accent-warning);">moderate</td>')
     table_html = table_html.replace('<td>high</td>', '<td style="color: var(--accent-danger);">high</td>')
-    table_html = table_html.replace('<td>HIGH</td>', '<td><span class="badge success">HIGH</span></td>')
+    table_html = table_html.replace('<td>HEALTHY</td>', '<td><span class="badge success">HEALTHY</span></td>')
     table_html = table_html.replace('<td>CAUTION</td>', '<td><span class="badge danger">CAUTION</span></td>')
-    table_html = table_html.replace('<td>MODERATE</td>', '<td><span class="badge warning">MODERATE</span></td>')
+    table_html = table_html.replace('<td>CRITICAL</td>', '<td><span class="badge danger">CRITICAL</span></td>')
 
-    # Fix generic Pandas header layout naming styles to look professional
+    # Header Remappings
     table_html = table_html.replace('<th>batch_id</th>', '<th>Batch ID</th>')
     table_html = table_html.replace('<th>timestamp</th>', '<th>Timestamp Reference</th>')
     table_html = table_html.replace('<th>psi</th>', '<th>PSI Score</th>')
@@ -186,9 +207,6 @@ def generate_dashboard_html(latest_reliability=None, latest_psi=None):
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Engineering Core - System Drift Telemetry</title>
         <style>
-            /* ============================================================
-               GLOBAL THEMATIC STYLE CORE (Matching Landing Page App UI)
-               ============================================================ */
             :root {{
                 --bg-primary: #0f172a;
                 --bg-secondary: #1e293b;
@@ -275,115 +293,34 @@ def generate_dashboard_html(latest_reliability=None, latest_psi=None):
                 color: var(--accent-info);
             }}
 
-            .status-card .value-HIGH {{ color: var(--accent-success); }}
-            .status-card .value-MODERATE {{ color: var(--accent-warning); }}
-            .status-card .value-CAUTION {{ color: var(--accent-danger); text-shadow: 0 0 10px rgba(239,68,68,0.2); }}
+            .status-card .value-HEALTHY {{ color: var(--accent-success); }}
+            .status-card .value-CAUTION {{ color: var(--accent-warning); }}
+            .status-card .value-CRITICAL {{ color: var(--accent-danger); text-shadow: 0 0 10px rgba(239,68,68,0.2); }}
 
-            .section {{
-                margin: 45px 0;
-            }}
-
-            .section h2 {{
-                font-size: 1.4rem;
-                color: var(--accent-info);
-                border-left: 4px solid var(--accent-neon);
-                padding-left: 12px;
-                margin-bottom: 20px;
-            }}
-
-            .chart-container {{
-                background: var(--bg-primary);
-                border: 2px solid var(--bg-tertiary);
-                border-radius: 8px;
-                padding: 15px;
-                margin: 20px 0;
-            }}
-
-            .alert-box {{
-                padding: 25px;
-                border-radius: 8px;
-            }}
-            .success-panel {{
-                border-left: 5px solid var(--accent-success);
-                background: linear-gradient(135deg, rgba(34, 197, 94, 0.08) 0%, rgba(21, 128, 61, 0.04) 100%);
-                border-top: 1px solid rgba(34, 197, 94, 0.15); border-right: 1px solid rgba(34, 197, 94, 0.15); border-bottom: 1px solid rgba(34, 197, 94, 0.15);
-            }}
+            .section {{ margin: 45px 0; }}
+            .section h2 {{ font-size: 1.4rem; color: var(--accent-info); border-left: 4px solid var(--accent-neon); padding-left: 12px; margin-bottom: 20px; }}
+            .chart-container {{ background: var(--bg-primary); border: 2px solid var(--bg-tertiary); border-radius: 8px; padding: 15px; margin: 20px 0; }}
+            .alert-box {{ padding: 25px; border-radius: 8px; }}
+            .success-panel {{ border-left: 5px solid var(--accent-success); background: linear-gradient(135deg, rgba(34, 197, 94, 0.08) 0%, rgba(21, 128, 61, 0.04) 100%); border-top: 1px solid rgba(34, 197, 94, 0.15); border-right: 1px solid rgba(34, 197, 94, 0.15); border-bottom: 1px solid rgba(34, 197, 94, 0.15); }}
             .success-panel h3 {{ color: #51cf66; margin-top:0; }}
-            
-            .warning-panel {{
-                border-left: 5px solid var(--accent-warning);
-                background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(180, 83, 9, 0.04) 100%);
-                border-top: 1px solid rgba(245, 158, 11, 0.15); border-right: 1px solid rgba(245, 158, 11, 0.15); border-bottom: 1px solid rgba(245, 158, 11, 0.15);
-            }}
+            .warning-panel {{ border-left: 5px solid var(--accent-warning); background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(180, 83, 9, 0.04) 100%); border-top: 1px solid rgba(245, 158, 11, 0.15); border-right: 1px solid rgba(245, 158, 11, 0.15); border-bottom: 1px solid rgba(245, 158, 11, 0.15); }}
             .warning-panel h3 {{ color: #fcc419; margin-top:0; }}
-
-            .critical-panel {{
-                border-left: 5px solid var(--accent-danger);
-                background: linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(153, 27, 27, 0.04) 100%);
-                border-top: 1px solid rgba(239, 68, 68, 0.15); border-right: 1px solid rgba(239, 68, 68, 0.15); border-bottom: 1px solid rgba(239, 68, 68, 0.15);
-            }}
+            .critical-panel {{ border-left: 5px solid var(--accent-danger); background: linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(153, 27, 27, 0.04) 100%); border-top: 1px solid rgba(239, 68, 68, 0.15); border-right: 1px solid rgba(239, 68, 68, 0.15); border-bottom: 1px solid rgba(239, 68, 68, 0.15); }}
             .critical-panel h3 {{ color: #ff6b6b; margin-top:0; }}
-
             .alert-box ul {{ padding-left: 20px; margin: 15px 0; }}
             .alert-box li {{ margin-bottom: 8px; color: var(--text-secondary); }}
-
-            .table-responsive {{
-                width: 100%;
-                overflow-x: auto;
-                border-radius: 8px;
-                border: 1px solid var(--bg-tertiary);
-            }}
-
-            .table {{
-                width: 100%;
-                border-collapse: collapse;
-                background: var(--bg-primary);
-                margin: 0;
-            }}
-
-            .table th, .table td {{
-                padding: 14px 16px;
-                text-align: left;
-                border-bottom: 1px solid var(--bg-tertiary);
-                font-size: 0.95rem;
-            }}
-
-            .table th {{
-                background-color: #090d16;
-                color: var(--accent-info);
-                font-weight: 600;
-                text-transform: uppercase;
-                font-size: 0.85rem;
-                letter-spacing: 0.5px;
-            }}
-
+            .table-responsive {{ width: 100%; overflow-x: auto; border-radius: 8px; border: 1px solid var(--bg-tertiary); }}
+            .table {{ width: 100%; border-collapse: collapse; background: var(--bg-primary); margin: 0; }}
+            .table th, .table td {{ padding: 14px 16px; text-align: left; border-bottom: 1px solid var(--bg-tertiary); font-size: 0.95rem; }}
+            .table th {{ background-color: #090d16; color: var(--accent-info); font-weight: 600; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.5px; }}
             .table tr:last-child td {{ border-bottom: none; }}
             .table tr:hover {{ background: rgba(51, 65, 85, 0.25); }}
-
-            .badge {{
-                padding: 4px 10px;
-                border-radius: 4px;
-                font-size: 0.8rem;
-                font-weight: 700;
-                letter-spacing: 0.5px;
-            }}
+            .badge {{ padding: 4px 10px; border-radius: 4px; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.5px; }}
             .badge.danger {{ background: rgba(239, 68, 68, 0.15); color: #ff6b6b; border: 1px solid var(--accent-danger); }}
             .badge.success {{ background: rgba(34, 197, 94, 0.15); color: #51cf66; border: 1px solid var(--accent-success); }}
             .badge.warning {{ background: rgba(245, 158, 11, 0.15); color: #fcc419; border: 1px solid var(--accent-warning); }}
-
-            .footer-text {{
-                text-align: center; 
-                margin-top: 50px; 
-                color: var(--text-secondary);
-                font-size: 0.85rem;
-                opacity: 0.7;
-            }}
-
-            @media (max-width: 768px) {{
-                body {{ padding: 15px 10px; }}
-                .container {{ padding: 20px; }}
-                .status-card .value {{ font-size: 26px; }}
-            }}
+            .footer-text {{ text-align: center; margin-top: 50px; color: var(--text-secondary); font-size: 0.85rem; opacity: 0.7; }}
+            @media (max-width: 768px) {{ body {{ padding: 15px 10px; }} .container {{ padding: 20px; }} .status-card .value {{ font-size: 26px; }} }}
         </style>
     </head>
     <body>
@@ -435,7 +372,6 @@ def generate_dashboard_html(latest_reliability=None, latest_psi=None):
                 <p>System Telemetry Engine Port 8000 • Re-Calculated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
             </div>
         </div>
-
         <script src="../js/dashboard.js"></script>
     </body>
     </html>
@@ -443,10 +379,8 @@ def generate_dashboard_html(latest_reliability=None, latest_psi=None):
     return html_template
 
 
-# Update this function inside src/dashboard_generator.py:
 def save_dashboard(latest_reliability=None, latest_psi=None, output_path='public/dashboard/index.html'):
     """Generate and save dashboard HTML directly to the Firebase public route"""
-    # Forward the live memory arguments straight to the html compiler!
     html = generate_dashboard_html(latest_reliability, latest_psi)
     target = Path(output_path)
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -454,7 +388,7 @@ def save_dashboard(latest_reliability=None, latest_psi=None, output_path='public
     with open(target, "w", encoding="utf-8") as f:
          f.write(html)
         
-    print(f" UNIFIED TELEMETRY DEPLOYED: {target.resolve()}")
+    print(f" UNIFIED TELEMETRY DEPLOYED FROM NEON DB: {target.resolve()}")
     return str(output_path)
 
 
