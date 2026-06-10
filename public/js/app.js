@@ -102,7 +102,7 @@ function handleFileSelection(file) {
  * Phase 1: Upload Handshake Ingestion Loop
  */
 async function uploadOrchestratorPipeline(file) {
-    progressStatusText.textContent = "TRANSMITTING MULTI-PART PAYLOAD TO R2 CLOUD BUCKET...";
+    progressStatusText.textContent = "Transmitting Multi-Part Payload tO R2 Cloud Bucket...";
     progressStatusText.className = "status-blinker";
     progressBarFill.style.width = '45%';
     progressBarFill.style.background = 'var(--accent-info)';
@@ -118,17 +118,17 @@ async function uploadOrchestratorPipeline(file) {
         });
 
         if (!response.ok) {
-            throw new Error(`Ingestion Rejected // Gateway Error Code: ${response.status}`);
+            throw new Error(`Ingestion Rejected: Gateway Error Code: ${response.status}`);
         }
 
         const data = await response.json();
-        console.log("Phase 1 Complete // Orchestrator Handshake Ingest Record:", data);
+        console.log("Phase 1 Complete: Orchestrator Handshake Ingest Record:", data);
         
         // Safely extract video UUID returned directly from Neon database model write
         const videoId = data.video_id || data.id;
         
         if (!videoId) {
-            throw new Error("Schema Error // Handshake failed to attach tracking UUID record.");
+            throw new Error("Schema Error: Handshake failed to attach tracking UUID record.");
         }
 
         // Advance progress tracking bar to background phase limits
@@ -148,9 +148,9 @@ async function uploadOrchestratorPipeline(file) {
  * Phase 2: Asynchronous Microservice Polling Engine Loop
  */
 function initializeStatusPolling(videoId) {
-    progressStatusText.textContent = "PARALLEL COMPUTATION ENGAGED: COMPUTING METRICS...";
+    progressStatusText.textContent = "Parallel Computation Engaged: Computing Metrics...";
     
-    // 💥 KILLSWITCH 1: Destroy any rogue ghost intervals before starting a new one
+    //  1: Destroy any rogue ghost intervals before starting a new one
     if (statusPollInterval) {
         clearInterval(statusPollInterval);
         statusPollInterval = null;
@@ -161,7 +161,7 @@ function initializeStatusPolling(videoId) {
         try {
             const response = await fetch(`${BASE_API_URL}/video-status/${videoId}`);
             
-            // 💥 KILLSWITCH 2: Do not fail silently on 404 or 500 errors!
+            //  2: Do not fail silently on 404 or 500 errors!
             if (!response.ok) {
                 // If it's a hard server error, crash the loop immediately.
                 if (response.status === 404 || response.status >= 500) {
@@ -190,7 +190,7 @@ function initializeStatusPolling(videoId) {
             }
 
         } catch (pollError) {
-            // 💥 KILLSWITCH 3: Ensure interval dies when an error is caught
+            //  3: Ensure interval dies when an error is caught
             if (statusPollInterval) {
                 clearInterval(statusPollInterval);
                 statusPollInterval = null;
