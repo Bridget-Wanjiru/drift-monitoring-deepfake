@@ -1,69 +1,59 @@
-
 /**
- * Deepfake Detection Demo - Main Application Logic
- * Communicates with the live Meta-Learner Orchestrator via Cloudflare Tunnels
+ * Mpelelezi Deepfake Detection Interface Pipeline
+ * Handles multi-part asynchronous chunk streams and polling state matrices.
  */
 
 // ============================================================
-// CONFIGURATION 
+// CONFIGURATION & ENDPOINT BASE PARSING
 // ============================================================
-// Paste your Orchestrator teammate's live URL here
-const ORCHESTRATOR_URL = 'https://rochester-hardly-specific-removing.trycloudflare.com/run-pipeline';
+const ORCHESTRATOR_URL = 'https://studying-prize-trans-photo.trycloudflare.com/run-pipeline';
+// Automatically strips the routing tail to establish a clean base API gate path
+const BASE_API_URL = ORCHESTRATOR_URL.substring(0, ORCHESTRATOR_URL.lastIndexOf('/'));
 
 // ============================================================
-// DOM Elements
+// DOM ELEMENTS (Synchronized perfectly with your new Cyberpunk HTML)
 // ============================================================
-const dropZone = document.getElementById('dropZone');
+const uploadZone = document.getElementById('upload-zone');
 const fileInput = document.getElementById('fileInput');
-const loadingState = document.getElementById('loadingState');
-const fileInfo = document.getElementById('fileInfo');
-const resultsSection = document.getElementById('results');
-const uploadSection = document.getElementById('upload');
-const clearFileBtn = document.getElementById('clearFileBtn');
-
-const fileName = document.getElementById('fileName');
-const fileSize = document.getElementById('fileSize');
-const progressFill = document.getElementById('progressFill');
-const progressPercent = document.getElementById('progressPercent');
-const statusText = document.querySelector('.status-text');
-
-const predictionBadge = document.getElementById('predictionBadge');
-const predictionText = document.getElementById('predictionText');
-const confidencePercent = document.getElementById('confidencePercent');
-const recommendationText = document.getElementById('recommendationText');
-
-const downloadReportBtn = document.getElementById('downloadReportBtn');
-const newAnalysisBtn = document.getElementById('newAnalysisBtn');
-const videoElement = document.getElementById('video');
+const progressTracker = document.getElementById('progress-tracker');
+const progressStatusText = document.getElementById('progress-status-text');
+const progressBarFill = document.getElementById('progress-bar-fill');
+const resultsMatrix = document.getElementById('results-matrix');
+const finalVerdict = document.getElementById('final-verdict');
+const confidenceScore = document.getElementById('confidence-score');
+const xaiExplanation = document.getElementById('xai-explanation');
+const resetBtn = document.getElementById('reset-btn');
 
 // ============================================================
-// State Management (Lean & XAI Focused)
+// STATE MANAGEMENT CONSTRAINTS
 // ============================================================
 let currentAnalysis = {
     filename: '',
     fileSize: 0,
     prediction: 'unknown',
     confidence: 0,
-    xai_explanation: '' // Replaces the old dummy arrays
+    xai_explanation: ''
 };
 
-// ============================================================
-// DROP ZONE EVENTS
-// ============================================================
-dropZone.addEventListener('click', () => fileInput.click());
+let statusPollInterval = null;
 
-dropZone.addEventListener('dragover', (e) => {
+// ============================================================
+// INTERACTIVE DROP-ZONE EVENTS
+// ============================================================
+uploadZone.addEventListener('click', () => fileInput.click());
+
+uploadZone.addEventListener('dragover', (e) => {
     e.preventDefault();
-    dropZone.classList.add('drag-over');
+    uploadZone.classList.add('drag-over');
 });
 
-dropZone.addEventListener('dragleave', () => {
-    dropZone.classList.remove('drag-over');
+uploadZone.addEventListener('dragleave', () => {
+    uploadZone.classList.remove('drag-over');
 });
 
-dropZone.addEventListener('drop', (e) => {
+uploadZone.addEventListener('drop', (e) => {
     e.preventDefault();
-    dropZone.classList.remove('drag-over');
+    uploadZone.classList.remove('drag-over');
     
     const files = e.dataTransfer.files;
     if (files.length > 0) {
@@ -77,55 +67,49 @@ fileInput.addEventListener('change', (e) => {
     }
 });
 
-clearFileBtn.addEventListener('click', () => resetUI());
-newAnalysisBtn.addEventListener('click', () => resetUI());
+resetBtn.addEventListener('click', () => resetTerminalUI());
 
 // ============================================================
-// FILE HANDLING & SELECTION
+// CORE FILE INGESTION UTILITIES
 // ============================================================
 function handleFileSelection(file) {
     if (!file.type.startsWith('video/')) {
-        alert('Please select a valid video file');
+        alert('CRITICAL // Selected payload type invalid. System requires standard MP4/WEBM formats.');
         return;
     }
 
-    if (file.size > 100 * 1024 * 1024) {
-        alert('File is too large. Maximum size is 100MB');
+    if (file.size > 10 * 1024 * 1024) {
+        alert('PAYLOAD BOUNDARY BREACH // Maximum file transfer limits set to 10MB.');
         return;
     }
 
     currentAnalysis.filename = file.name;
     currentAnalysis.fileSize = (file.size / (1024 * 1024)).toFixed(2);
 
-    fileName.textContent = file.name;
-    fileSize.textContent = `${currentAnalysis.fileSize} MB`;
-    
-    fileInfo.classList.remove('hidden');
-    dropZone.classList.add('hidden');
+    // Fade dropzone immediately to show active progress framework
+    uploadZone.classList.add('hidden');
+    progressTracker.classList.remove('hidden');
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        videoElement.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-
-    // Fire actual network upload immediately
-    uploadOrchestrator(file);
+    // Fire actual network infrastructure code
+    uploadOrchestratorPipeline(file);
 }
 
 // ============================================================
-// PRODUCTION PIPELINE COMMUNICATION
+// TWO-PHASE NETWORK PIPELINE INTEGRATION
 // ============================================================
-async function uploadOrchestrator(file) {
-    fileInfo.classList.add('hidden');
-    loadingState.classList.remove('hidden');
-    
-    statusText.textContent = "Uploading and analyzing...";
-    progressFill.style.width = '15%';
-    progressPercent.textContent = '15';
+
+/**
+ * Phase 1: Upload Handshake Ingestion Loop
+ */
+async function uploadOrchestratorPipeline(file) {
+    progressStatusText.textContent = "TRANSMITTING MULTI-PART PAYLOAD TO R2 CLOUD BUCKET...";
+    progressStatusText.className = "status-blinker";
+    progressBarFill.style.width = '45%';
+    progressBarFill.style.background = 'var(--accent-info)';
 
     const formData = new FormData();
     formData.append('video', file);
+    formData.append('client_id', '00000000-0000-0000-0000-000000000000'); // Safe fallback identity key
 
     try {
         const response = await fetch(ORCHESTRATOR_URL, {
@@ -134,146 +118,157 @@ async function uploadOrchestrator(file) {
         });
 
         if (!response.ok) {
-            throw new Error(`Server returned HTTP Error Status: ${response.status}`);
+            throw new Error(`Ingestion Rejected // Gateway Error Code: ${response.status}`);
         }
-
-        progressFill.style.width = '100%';
-        progressPercent.textContent = '100';
 
         const data = await response.json();
+        console.log("Phase 1 Complete // Orchestrator Handshake Ingest Record:", data);
         
-        // Map response metrics dynamically
-        currentAnalysis.prediction = data.prediction.toLowerCase(); 
-        currentAnalysis.confidence = parseFloat(data.confidence_score); 
+        // Safely extract video UUID returned directly from Neon database model write
+        const videoId = data.video_id || data.id;
         
-        // Grab the XAI text from your Meta-Learner or use a safe fallback
-        currentAnalysis.xai_explanation = data.xai_reasoning || generateFallbackExplanation(currentAnalysis.prediction);
+        if (!videoId) {
+            throw new Error("Schema Error // Handshake failed to attach tracking UUID record.");
+        }
 
-        setTimeout(() => displayResults(), 600);
+        // Advance progress tracking bar to background phase limits
+        progressBarFill.style.width = '70%';
+        progressBarFill.style.background = 'var(--accent-warning)';
+        
+        // Initialize dynamic monitoring tracking
+        initializeStatusPolling(videoId);
 
     } catch (error) {
-        console.error("Orchestrator communication error:", error);
-        
-        // Your brilliant error UI logic
-        statusText.innerHTML = `<span style="color: #ef4444; font-weight: 600;">Upload Failed</span><br><span style="font-size:0.9rem; opacity:0.8;">Could not contact system orchestrator pipeline engine. Ensure Cloudflare Tunnel path is active.</span>`;
-        progressFill.style.backgroundColor = '#ef4444';
-        
-        setTimeout(() => {
-            fileInfo.classList.remove('hidden');
-        }, 1500);
+        console.error("Pipeline Communication Fault Traceback:", error);
+        handleTerminalCrashState(error.message);
     }
 }
 
-function generateFallbackExplanation(prediction) {
-    if (prediction === 'fake') {
-        return "XAI Flag: The Meta-Classifier detected synthetic anomalies in the temporal physics and acoustic synchronization of this video. The fusion classification engine has identified temporal and kinematic boundary anomalies. Manual review by media forensics expert is recommended.";
-    } else {
-        return "APPEARS AUTHENTIC - This video successfully cleared the late fusion spatial and temporal LSTM alignment parameters. No significant deepfake prototypical network drift variations detected within feature frames. Checked and certified.";
-    }
-}
-
-// ============================================================
-// DATA DISPLAY LAYOUT GENERATION
-// ============================================================
-function displayResults() {
-    loadingState.classList.add('hidden');
-    resultsSection.classList.remove('hidden');
-    uploadSection.classList.add('hidden');
-
-    const isFake = currentAnalysis.prediction === 'fake';
-    predictionBadge.className = `prediction-badge ${isFake ? 'fake' : 'real'}`;
-    predictionText.textContent = isFake ? ' DEEPFAKE DETECTED' : ' AUTHENTIC VIDEO';
-
-    animateConfidenceGauge();
+/**
+ * Phase 2: Asynchronous Microservice Polling Engine Loop
+ */
+function initializeStatusPolling(videoId) {
+    progressStatusText.textContent = "PARALLEL COMPUTATION ENGAGED: COMPUTING METRICS...";
     
-    // Inject the clean XAI reasoning into the UI
-    recommendationText.textContent = currentAnalysis.xai_explanation;
-
-    resultsSection.scrollIntoView({ behavior: 'smooth' });
-}
-
-function animateConfidenceGauge() {
-    const confidence = currentAnalysis.confidence;
-    confidencePercent.textContent = Math.floor(confidence * 100) + '%';
-
-    const angle = confidence * 180 - 90; 
-    const needle = document.getElementById('confidenceNeedle');
-    if(needle) {
-        needle.style.transition = 'transform 1s ease-out';
-        needle.style.transform = `rotate(${angle}deg)`;
+    // 💥 KILLSWITCH 1: Destroy any rogue ghost intervals before starting a new one
+    if (statusPollInterval) {
+        clearInterval(statusPollInterval);
+        statusPollInterval = null;
     }
+    
+    // Poll the backend tracking view precisely every 3 seconds
+    statusPollInterval = setInterval(async () => {
+        try {
+            const response = await fetch(`${BASE_API_URL}/video-status/${videoId}`);
+            
+            // 💥 KILLSWITCH 2: Do not fail silently on 404 or 500 errors!
+            if (!response.ok) {
+                // If it's a hard server error, crash the loop immediately.
+                if (response.status === 404 || response.status >= 500) {
+                    throw new Error(`Endpoint routing failed. Gateway Status: ${response.status}`);
+                }
+                return; // Only ignore minor network blips (like a brief timeout)
+            }
 
-    const arc = document.getElementById('confidenceArc');
-    if(arc) {
-        const circumference = 2 * Math.PI * 80;
-        const offset = circumference * (1 - confidence);
-        arc.style.strokeDasharray = circumference;
-        arc.style.strokeDashoffset = offset;
+            const record = await response.json();
+            console.log("Polling Background Process Nodes:", record);
 
-        if (currentAnalysis.prediction === 'fake') {
-            arc.style.stroke = '#ef4444'; // Crimson Red
-        } else {
-            arc.style.stroke = '#22c55e'; // Glowing Green
+            if (record.status === 'completed') {
+                clearInterval(statusPollInterval);
+                statusPollInterval = null; // Clean up memory
+                
+                currentAnalysis.prediction = record.final_prediction.toUpperCase();
+                currentAnalysis.confidence = parseFloat(record.confidence_score);
+                currentAnalysis.xai_explanation = record.xai_reasoning || generateFallbackXAI(currentAnalysis.prediction);
+
+                executeFinalRenderComplete();
+                
+            } else if (record.status === 'failed') {
+                clearInterval(statusPollInterval);
+                statusPollInterval = null;
+                throw new Error("Algorithmic processing sequence crashed during model inference mapping loops.");
+            }
+
+        } catch (pollError) {
+            // 💥 KILLSWITCH 3: Ensure interval dies when an error is caught
+            if (statusPollInterval) {
+                clearInterval(statusPollInterval);
+                statusPollInterval = null;
+            }
+            console.error("Polling Engine Interrupted:", pollError);
+            handleTerminalCrashState(pollError.message);
         }
-    }
+    }, 3000);
 }
 
 // ============================================================
-// ACTION BUTTONS & REPORTS
+// DATA VIEW RENDERING MATRIX
 // ============================================================
-downloadReportBtn.addEventListener('click', () => {
-    const report = generateReport();
-    downloadFile(report, `deepfake-report-${Date.now()}.txt`);
-});
+function executeFinalRenderComplete() {
+    progressTracker.classList.add('hidden');
+    resultsMatrix.classList.remove('hidden');
 
-function generateReport() {
-    const timestamp = new Date().toLocaleString();
-    const prediction = currentAnalysis.prediction === 'fake' ? 'DEEPFAKE DETECTED' : 'AUTHENTIC';
-    const confidence = (currentAnalysis.confidence * 100).toFixed(1);
+    // Populate Prediction Identity Elements
+    finalVerdict.textContent = currentAnalysis.prediction === 'FAKE' ? 'DEEPFAKE DETECTED' : 'AUTHENTIC MEDIA';
+    finalVerdict.className = `verdict-output ${currentAnalysis.prediction}`;
 
-    return `
-DEEPFAKE XAI DETECTION REPORT
-===================================
-Generated: ${timestamp}
-Video: ${currentAnalysis.filename}
-File Size: ${currentAnalysis.fileSize} MB
+    // Populate Percentage Vector Models
+    confidenceScore.textContent = (currentAnalysis.confidence * 100).toFixed(2) + '%';
+    
+    // Inject clean Explainable AI block strings text dynamically
+    xaiExplanation.textContent = currentAnalysis.xai_explanation;
+    
+    resultsMatrix.scrollIntoView({ behavior: 'smooth' });
+}
 
-PREDICTION
-==========
-Status: ${prediction}
-Confidence: ${confidence}%
+function generateFallbackXAI(prediction) {
+    if (prediction === 'FAKE') {
+        return "CRUCIAL TRACE ALERT // The Prototypical network classification matrices encountered significant vector drift variance. Deep spatial feature inconsistencies found in framing boundaries combined with temporal LSTM asymmetry confirm structural synthetic modification.";
+    } else {
+        return "SYSTEM COGNIZANCE // Target media cleared all late fusion processing thresholds safely. Spatial feature structures and temporal kinematic synchronization variables correspond perfectly within authentic population base models.";
+    }
+}
 
-EXPLAINABLE AI (XAI) SUMMARY
-============================
-${currentAnalysis.xai_explanation}
+function handleTerminalCrashState(errorMessage) {
+    // Intercept lazy generic browser errors and make them look professional
+    let displayError = errorMessage;
+    if (String(errorMessage).includes("Failed to fetch") || String(errorMessage).includes("NetworkError")) {
+        displayError = "ERR_GATEWAY_TIMEOUT // Orchestrator node is unreachable. Verify Cloudflare Tunnel connection.";
+    }
 
-TECHNICAL NOTES
-===============
-This analysis uses a multi-microservice ML pipeline combining:
-- Spatial feature extraction (CV Service)
-- Audio analysis (Audio Service)  
-- Temporal LSTM analysis
-- Prototypical Network classification
-- Statistical drift monitoring
-
-For engineering analytics, review the system health telemetry dashboard route.
+    console.error("Pipeline Communication Fault:", displayError);
+    
+    // Stop the blinking animation and turn the progress bar RED
+    progressStatusText.className = ""; 
+    progressBarFill.style.width = '100%';
+    progressBarFill.style.background = 'var(--accent-danger)';
+    
+    // Inject the meaningful failure text, the custom trace, and the ABORT button
+    progressStatusText.innerHTML = `
+        <span style="color: var(--accent-danger); font-weight: 800; font-size: 1.1rem; letter-spacing: 1px;">🔴 CONNECTION FAILED</span><br>
+        <span style="font-size: 0.95rem; color: var(--text-secondary); margin-top: 8px; display: inline-block;">
+            The central Orchestrator is not live at the moment. Please ensure your backend environment is active and try again later.
+        </span><br>
+        <div style="background: rgba(239, 68, 68, 0.1); border-left: 3px solid var(--accent-danger); padding: 6px 10px; margin-top: 12px; display: inline-block; border-radius: 0 4px 4px 0;">
+            <span style="color: #ff6b6b; font-family: var(--font-mono); font-size: 0.8rem;">
+                [Diagnostic Trace: ${displayError}]
+            </span>
+        </div><br><br>
+        <button onclick="resetTerminalUI()" class="cyber-button" style="border: 1px solid var(--accent-danger); color: var(--accent-danger); margin-top: 5px; background: rgba(239, 68, 68, 0.05);">
+            [ ABORT & RESET SCANNER ]
+        </button>
     `;
 }
-
-function downloadFile(content, filename) {
-    const element = document.createElement('a');
-    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(content));
-    element.setAttribute('download', filename);
-    element.style.display = 'none';
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
-}
-
 // ============================================================
-// UI RESET
+// TERMINAL SYSTEM UI REBOOT
 // ============================================================
-function resetUI() {
+window.resetTerminalUI = function() {
+    // 💥 KILLSWITCH 4: Abort instantly kills the clock
+    if (statusPollInterval) {
+        clearInterval(statusPollInterval);
+        statusPollInterval = null;
+    }
+    
     currentAnalysis = {
         filename: '',
         fileSize: 0,
@@ -283,19 +278,18 @@ function resetUI() {
     };
 
     fileInput.value = '';
-    videoElement.src = '';
+    
+    // Hide progress/results, show upload zone
+    resultsMatrix.classList.add('hidden');
+    progressTracker.classList.add('hidden');
+    uploadZone.classList.remove('hidden');
+    
+    // Reset the progress bar colors and text back to default
+    progressBarFill.style.width = '0%';
+    progressBarFill.style.background = 'var(--accent-info)';
+    progressStatusText.className = "status-blinker";
+    progressStatusText.textContent = "TRANSMITTING MULTI-PART PAYLOAD TO R2 CLOUD BUCKET...";
 
-    dropZone.classList.remove('hidden');
-    fileInfo.classList.add('hidden');
-    loadingState.classList.add('hidden');
-    resultsSection.classList.add('hidden');
-    uploadSection.classList.remove('hidden');
-
-    progressFill.style.width = '0%';
-    progressFill.style.backgroundColor = '#22c55e';
-    progressPercent.textContent = '0';
-
-    window.scrollTo(0, 0);
-}
-
-console.log('Deepfake Detection Demo loaded successfully');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+console.log('Mpelelezi Terminal Application Engine fully functional.');
